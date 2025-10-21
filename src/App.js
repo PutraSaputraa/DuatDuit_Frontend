@@ -14,7 +14,7 @@ function App() {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('https://duatduit-backend-production.up.railway.app/auth.php?action=check', {
+      const response = await fetch('https://duatduitbackend-production.up.railway.app/auth.php?action=check', {
         credentials: 'include'
       });
       const result = await response.json();
@@ -35,7 +35,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch('https://duatduit-backend-production.up.railway.app/auth.php?action=logout', {
+      await fetch('https://duatduitbackend-production.up.railway.app/auth.php?action=logout', {
         credentials: 'include'
       });
       setUser(null);
