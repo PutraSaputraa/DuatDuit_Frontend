@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun } from 'lucide-react';
 
-const API_URL = 'duatduitbackend-production.up.railway.app';
+const API_URL = 'https://duatduitbackend-production.up.railway.app';
 
 const DuaTduit = () => {
   const [transactions, setTransactions] = useState([]);

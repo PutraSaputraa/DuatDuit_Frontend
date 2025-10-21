@@ -18,8 +18,8 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     const url = isRegister 
-      ? 'http://localhost/duatduit-api/auth.php?action=register'
-      : 'http://localhost/duatduit-api/auth.php?action=login';
+      ? 'https://duatduitbackend-production.up.railway.app/auth.php?action=register'
+      : 'https://duatduitbackend-production.up.railway.app/auth.php?action=login';
 
     try {
       const response = await fetch(url, {
