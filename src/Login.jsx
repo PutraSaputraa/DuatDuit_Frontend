@@ -22,25 +22,14 @@ const Login = ({ onLoginSuccess }) => {
       : 'https://duatduitbackend-production.up.railway.app/auth.php?action=login';
 
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Penting untuk session
-        body: JSON.stringify(formData)
-      });
+      $body = @{
+      username = "anugrah"
+      email = "anugrah@example.com"
+      password = "password123"
+      full_name = "Anugrah"
+  } | ConvertTo-Json
 
-      const result = await response.json();
-
-      if (result.success) {
-        if (isRegister) {
-          alert('Registrasi berhasil! Silakan login.');
-          setIsRegister(false);
-        } else {
-          onLoginSuccess(result.user);
-        }
-      } else {
-        setError(result.error || 'Terjadi kesalahan');
-      }
+  Invoke-RestMethod -Uri "https://duatduitbackend-production.up.railway.app/auth.php?action=register" -Method POST -Body $body -ContentType "application/json"
     } catch (err) {
       setError('Gagal terhubung ke server');
     } finally {
