@@ -12,23 +12,13 @@ function App() {
     checkAuth();
   }, []);
 
-  // ✅ Check Auth dengan JWT Token
+  // ✅ Check Auth dengan Session (tanpa token)
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
-      
-      if (!token) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-      
       const response = await fetch(
         'https://duatduitbackend-production.up.railway.app/auth.php?action=check',
         {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include' // 🔑 Kirim session cookie
         }
       );
       
@@ -37,13 +27,10 @@ function App() {
       if (result.authenticated) {
         setUser(result.user);
       } else {
-        // Token tidak valid, hapus
-        localStorage.removeItem('auth_token');
         setUser(null);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('auth_token');
       setUser(null);
     } finally {
       setLoading(false);

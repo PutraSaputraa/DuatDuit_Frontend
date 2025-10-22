@@ -25,6 +25,7 @@ const Login = ({ onLoginSuccess }) => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // 🔑 PENTING: Untuk mengirim/menerima session cookie
         body: JSON.stringify(formData)
       });
 
@@ -36,8 +37,7 @@ const Login = ({ onLoginSuccess }) => {
           setIsRegister(false);
           setFormData({ username: '', email: '', password: '', full_name: '' });
         } else {
-          // ✅ Simpan token ke localStorage
-          localStorage.setItem('auth_token', result.token);
+          // ✅ Session sudah otomatis tersimpan di cookie
           onLoginSuccess(result.user);
         }
       } else {
