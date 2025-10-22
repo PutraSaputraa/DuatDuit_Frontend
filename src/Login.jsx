@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
-import { LogIn, UserPlus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun, LogOut, User } from 'lucide-react';
 
+const API_URL = 'https://duatduitbackend-production.up.railway.app/api.php';
+const AUTH_URL = 'https://duatduitbackend-production.up.railway.app/auth.php';
+
+// ============= KOMPONEN LOGIN =============
 const Login = ({ onLoginSuccess }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({
@@ -18,14 +22,13 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     const url = isRegister 
-      ? 'https://duatduitbackend-production.up.railway.app/auth.php?action=register'
-      : 'https://duatduitbackend-production.up.railway.app/auth.php?action=login';
+      ? `${AUTH_URL}?action=register`
+      : `${AUTH_URL}?action=login`;
 
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // ❌ HAPUS credentials: 'include' karena tidak perlu lagi dengan token
         body: JSON.stringify(formData)
       });
 
@@ -35,19 +38,11 @@ const Login = ({ onLoginSuccess }) => {
         if (isRegister) {
           alert('Registrasi berhasil! Silakan login.');
           setIsRegister(false);
-          // Reset form setelah register
-          setFormData({
-            username: '',
-            email: '',
-            password: '',
-            full_name: ''
-          });
+          setFormData({ username: '', email: '', password: '', full_name: '' });
         } else {
-          // 🔑 SIMPAN TOKEN ke localStorage setelah login berhasil
+          // ✅ Simpan token dan user data
           localStorage.setItem('auth_token', result.token);
           localStorage.setItem('user_data', JSON.stringify(result.user));
-          
-          // Panggil callback parent component
           onLoginSuccess(result.user);
         }
       } else {
@@ -80,7 +75,7 @@ const Login = ({ onLoginSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Username {isRegister && 'atau Email'}
+              Username
             </label>
             <input
               type="text"
@@ -139,14 +134,9 @@ const Login = ({ onLoginSuccess }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50"
           >
-            {loading ? 'Loading...' : (
-              <>
-                {isRegister ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
-                {isRegister ? 'Daftar' : 'Login'}
-              </>
-            )}
+            {loading ? 'Loading...' : (isRegister ? 'Daftar' : 'Login')}
           </button>
         </form>
 
@@ -154,7 +144,7 @@ const Login = ({ onLoginSuccess }) => {
           <button
             onClick={() => {
               setIsRegister(!isRegister);
-              setError(''); // Reset error saat switch mode
+              setError('');
             }}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
