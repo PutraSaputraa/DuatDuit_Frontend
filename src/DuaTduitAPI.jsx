@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun, LogOut } from 'lucide-react';
 
 const API_URL = 'https://duatduitbackend-production.up.railway.app/api.php';
@@ -23,6 +23,7 @@ const DuaTduit = ({ user, onLogout }) => {
   // Load data dari API saat pertama kali
   useEffect(() => {
     fetchTransactions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fungsi untuk fetch data dari API
@@ -73,12 +74,14 @@ const DuaTduit = ({ user, onLogout }) => {
 
     setLoading(true);
     try {
+      const token = localStorage.getItem('auth_token');
+      
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        credentials: 'include', // PENTING: Untuk mengirim session cookie
         body: JSON.stringify(newTransaction)
       });
 
