@@ -12,41 +12,38 @@ function App() {
     checkAuth();
   }, []);
 
-  // ✅ Check Auth dengan Token
+  // 🆕 Check Auth dengan Token (bukan session)
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('auth_token');
       const userData = localStorage.getItem('user_data');
       
+      // Jika token dan user data ada, langsung set user
       if (token && userData) {
-        // ✅ Set user langsung tanpa validasi ke backend dulu
-        // (untuk performa lebih cepat)
-        setUser(JSON.parse(userData));
-        
-        // ⚠️ HAPUS validasi ke backend jika endpoint check belum dibuat
-        // Atau comment dulu sampai backend siap
-        /*
+        // Optional: Validasi token ke backend
         const response = await fetch(
           'https://duatduitbackend-production.up.railway.app/auth.php?action=check',
           {
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${token}` // 🔑 Kirim token di header
             }
           }
         );
         
         const result = await response.json();
         
-        if (!result.authenticated) {
+        if (result.authenticated) {
+          setUser(JSON.parse(userData));
+        } else {
+          // Token tidak valid, hapus dari localStorage
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user_data');
           setUser(null);
         }
-        */
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      // Jika error, tetap gunakan data lokal
+      // Jika error, tetap coba gunakan data lokal
       const userData = localStorage.getItem('user_data');
       if (userData) {
         setUser(JSON.parse(userData));
@@ -60,14 +57,31 @@ function App() {
     setUser(userData);
   };
 
-  const handleLogout = () => {
-    // ✅ Simplified logout - cukup hapus dari localStorage
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    setUser(null);
-    
-    // ⚠️ Tidak perlu panggil backend untuk logout dengan JWT
-    // (Token tinggal dibuang dari client side)
+  const handleLogout = async () => {
+    try {
+      // Hapus token dari localStorage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      
+      // Optional: Panggil endpoint logout (jika ada cleanup di backend)
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        await fetch(
+          'https://duatduitbackend-production.up.railway.app/auth.php?action=logout',
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+      }
+      
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Tetap logout meski error
+      setUser(null);
+    }
   };
 
   if (loading) {
