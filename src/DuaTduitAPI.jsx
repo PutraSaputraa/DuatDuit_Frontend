@@ -100,50 +100,6 @@ const DuaTduit = () => {
       description: formData.description,
       date: formData.date
     };
-
-    setLoading(true);
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // 🔑 Kirim token
-        },
-        body: JSON.stringify(newTransaction)
-      });
-
-      if (response.status === 401) {
-        alert('Session expired. Silakan login kembali.');
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        onLogout();
-        return;
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert('Transaksi berhasil disimpan!');
-        await fetchTransactions();
-        
-        setShowModal(false);
-        setModalType('');
-        setFormData({
-          amount: '',
-          category: '',
-          source: '',
-          description: '',
-          date: new Date().toISOString().split('T')[0]
-        });
-      } else {
-        alert('Gagal menyimpan transaksi: ' + (result.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error saving transaction:', error);
-      alert('Terjadi kesalahan saat menyimpan data');
-    } finally {
-      setLoading(false);
-    }
   };
 
   // 🆕 Fungsi Logout
