@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun, LogOut, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { LogIn, UserPlus } from 'lucide-react';
 
-const API_URL = 'https://duatduitbackend-production.up.railway.app/api.php';
-const AUTH_URL = 'https://duatduitbackend-production.up.railway.app/auth.php';
-
-// ============= KOMPONEN LOGIN =============
 const Login = ({ onLoginSuccess }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,8 +18,8 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     const url = isRegister 
-      ? `${AUTH_URL}?action=register`
-      : `${AUTH_URL}?action=login`;
+      ? 'https://duatduitbackend-production.up.railway.app/auth.php?action=register'
+      : 'https://duatduitbackend-production.up.railway.app/auth.php?action=login';
 
     try {
       const response = await fetch(url, {
@@ -40,7 +36,7 @@ const Login = ({ onLoginSuccess }) => {
           setIsRegister(false);
           setFormData({ username: '', email: '', password: '', full_name: '' });
         } else {
-          // ✅ Simpan token dan user data
+          // ✅ Simpan token ke localStorage
           localStorage.setItem('auth_token', result.token);
           localStorage.setItem('user_data', JSON.stringify(result.user));
           onLoginSuccess(result.user);
@@ -134,9 +130,14 @@ const Login = ({ onLoginSuccess }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? 'Loading...' : (isRegister ? 'Daftar' : 'Login')}
+            {loading ? 'Loading...' : (
+              <>
+                {isRegister ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+                {isRegister ? 'Daftar' : 'Login'}
+              </>
+            )}
           </button>
         </form>
 
