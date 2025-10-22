@@ -29,8 +29,12 @@ const DuaTduit = ({ user, onLogout }) => {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('auth_token');
+      
       const response = await fetch(API_URL, {
-        credentials: 'include' // PENTING: Untuk mengirim session cookie
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       const result = await response.json();
       
@@ -38,6 +42,10 @@ const DuaTduit = ({ user, onLogout }) => {
         setTransactions(result.data);
       } else {
         console.error('Failed to fetch transactions');
+        if (result.error && result.error.includes('Unauthorized')) {
+          alert('Session expired. Silakan login kembali.');
+          onLogout();
+        }
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
