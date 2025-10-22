@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun } from 'lucide-react';
+import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun, LogOut, User } from 'lucide-react';
 
 const API_URL = 'https://duatduitbackend-production.up.railway.app/api.php';
 
-// ============= KOMPONEN DASHBOARD =============
-const DuaTduit = () => {
-  const [user, setUser] = useState(null);
+const DuaTduit = ({ user, onLogout }) => { // ✅ Terima props
   const [transactions, setTransactions] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
@@ -22,24 +20,13 @@ const DuaTduit = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
-  // ✅ Cek apakah user sudah login saat pertama kali
-  useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const userData = localStorage.getItem('user_data');
-    
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-      fetchTransactions();
-    }
-  }, []);
-
-  // ✅ Fungsi untuk fetch dengan Authorization header
+  // ✅ Fungsi helper untuk fetch dengan Authorization header
   const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('auth_token');
     
     if (!token) {
       alert('Sesi expired, silakan login kembali');
-      handleLogout();
+      onLogout();
       return null;
     }
 
@@ -55,7 +42,7 @@ const DuaTduit = () => {
       // Cek jika unauthorized
       if (response.status === 401) {
         alert('Sesi expired, silakan login kembali');
-        handleLogout();
+        onLogout();
         return null;
       }
 
@@ -66,6 +53,12 @@ const DuaTduit = () => {
     }
   };
 
+  // Load data dari API saat pertama kali
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  // ✅ Fungsi untuk fetch data dari API dengan token
   const fetchTransactions = async () => {
     setLoading(true);
     try {
@@ -79,6 +72,53 @@ const DuaTduit = () => {
     } catch (error) {
       console.error('Error fetching transactions:', error);
       alert('Gagal memuat data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Fungsi submit ke API dengan token
+  const handleSubmit = async () => {
+    if (!formData.amount || !formData.category || !formData.source) {
+      alert('Mohon lengkapi semua field yang wajib diisi');
+      return;
+    }
+    
+    const newTransaction = {
+      type: modalType,
+      amount: formData.amount,
+      category: formData.category,
+      source: formData.source,
+      description: formData.description,
+      date: formData.date
+    };
+
+    setLoading(true);
+    try {
+      const result = await fetchWithAuth(API_URL, {
+        method: 'POST',
+        body: JSON.stringify(newTransaction)
+      });
+
+      if (result && result.success) {
+        alert('Transaksi berhasil disimpan!');
+        await fetchTransactions();
+        
+        setShowModal(false);
+        setModalType('');
+        setFormData({
+          amount: '',
+          category: '',
+          source: '',
+          description: '',
+          date: new Date().toISOString().split('T')[0]
+        });
+      } else {
+        alert('Gagal menyimpan transaksi: ' + (result?.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      alert('Terjadi kesalahan saat menyimpan data');
     } finally {
       setLoading(false);
     }
@@ -200,12 +240,14 @@ const DuaTduit = () => {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-green-50'} transition-colors duration-300`}>
+      {/* Loading Indicator */}
       {loading && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-6 py-3 rounded-full shadow-lg z-50">
           Loading...
         </div>
       )}
 
+      {/* Navbar */}
       <nav className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} shadow-sm border-b sticky top-0 z-40`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -215,6 +257,8 @@ const DuaTduit = () => {
               </div>
               <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>DuatDuit</h1>
             </div>
+            
+            {/* ✅ Tampilkan username dan tombol logout */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <User className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
@@ -222,14 +266,17 @@ const DuaTduit = () => {
                   {user.username}
                 </span>
               </div>
+              
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
+              
+              {/* ✅ Tombol Logout */}
               <button
-                onClick={handleLogout}
+                onClick={onLogout}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-red-400' : 'bg-gray-100 text-red-600'} hover:scale-110 transition-transform`}
                 title="Logout"
               >
