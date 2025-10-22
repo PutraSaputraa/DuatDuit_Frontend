@@ -25,7 +25,7 @@ const Login = ({ onLoginSuccess }) => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Penting untuk session
+        // ❌ HAPUS credentials: 'include' karena tidak perlu lagi dengan token
         body: JSON.stringify(formData)
       });
 
@@ -35,13 +35,26 @@ const Login = ({ onLoginSuccess }) => {
         if (isRegister) {
           alert('Registrasi berhasil! Silakan login.');
           setIsRegister(false);
+          // Reset form setelah register
+          setFormData({
+            username: '',
+            email: '',
+            password: '',
+            full_name: ''
+          });
         } else {
+          // 🔑 SIMPAN TOKEN ke localStorage setelah login berhasil
+          localStorage.setItem('auth_token', result.token);
+          localStorage.setItem('user_data', JSON.stringify(result.user));
+          
+          // Panggil callback parent component
           onLoginSuccess(result.user);
         }
       } else {
         setError(result.error || 'Terjadi kesalahan');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('Gagal terhubung ke server');
     } finally {
       setLoading(false);
@@ -139,7 +152,10 @@ const Login = ({ onLoginSuccess }) => {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => setIsRegister(!isRegister)}
+            onClick={() => {
+              setIsRegister(!isRegister);
+              setError(''); // Reset error saat switch mode
+            }}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
             {isRegister ? 'Sudah punya akun? Login' : 'Belum punya akun? Daftar'}

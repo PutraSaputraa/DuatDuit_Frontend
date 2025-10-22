@@ -20,37 +20,75 @@ const DuaTduit = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
+  // 🔑 Helper function untuk get token
+  const getAuthToken = () => {
+    return localStorage.getItem('auth_token');
+  };
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user_data');
+    if (storedUser) {
+      setUserData(JSON.parse(storedUser));
+    }
+  }, []);
+
   // Load data dari API saat pertama kali
   useEffect(() => {
     fetchTransactions();
   }, []);
 
-  // Fungsi untuk fetch data dari API
   const fetchTransactions = async () => {
     setLoading(true);
     try {
+      const token = getAuthToken();
+      
+      if (!token) {
+        alert('Anda belum login!');
+        onLogout(); // Redirect ke login
+        return;
+      }
+
       const response = await fetch(API_URL, {
-        credentials: 'include' // PENTING: Untuk mengirim session cookie
+        headers: {
+          'Authorization': `Bearer ${token}` // 🔑 Kirim token di header
+        }
       });
+
+      // Cek jika unauthorized (token expired/invalid)
+      if (response.status === 401) {
+        alert('Session expired. Silakan login kembali.');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        onLogout();
+        return;
+      }
+      
       const result = await response.json();
       
       if (result.success) {
         setTransactions(result.data);
       } else {
-        console.error('Failed to fetch transactions');
+        console.error('Failed to fetch transactions:', result.error);
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
-      alert('Gagal memuat data. Pastikan XAMPP sudah berjalan!');
+      alert('Gagal memuat data!');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fungsi submit ke API
   const handleSubmit = async () => {
     if (!formData.amount || !formData.category || !formData.source) {
       alert('Mohon lengkapi semua field yang wajib diisi');
+      return;
+    }
+    
+    const token = getAuthToken();
+    
+    if (!token) {
+      alert('Anda belum login!');
+      onLogout();
       return;
     }
     
@@ -62,6 +100,58 @@ const DuaTduit = () => {
       description: formData.description,
       date: formData.date
     };
+
+    setLoading(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // 🔑 Kirim token
+        },
+        body: JSON.stringify(newTransaction)
+      });
+
+      if (response.status === 401) {
+        alert('Session expired. Silakan login kembali.');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        onLogout();
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Transaksi berhasil disimpan!');
+        await fetchTransactions();
+        
+        setShowModal(false);
+        setModalType('');
+        setFormData({
+          amount: '',
+          category: '',
+          source: '',
+          description: '',
+          date: new Date().toISOString().split('T')[0]
+        });
+      } else {
+        alert('Gagal menyimpan transaksi: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      alert('Terjadi kesalahan saat menyimpan data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🆕 Fungsi Logout
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+    onLogout();
+  };
 
     setLoading(true);
     try {
@@ -178,14 +268,34 @@ const DuaTduit = () => {
               <div className="bg-gradient-to-r from-blue-400 to-green-400 p-2 rounded-xl">
                 <Wallet className="w-6 h-6 text-white" />
               </div>
-              <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>DuatDuit</h1>
+              <div>
+                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>DuatDuit</h1>
+                {userData && (
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Hi, {userData.username}!
+                  </p>
+                )}
+              </div>
             </div>
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}
-            >
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            
+            <div className="flex items-center gap-3">
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${darkMode ? 'bg-red-900 text-red-200 hover:bg-red-800' : 'bg-red-100 text-red-600 hover:bg-red-200'} transition-colors`}
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
