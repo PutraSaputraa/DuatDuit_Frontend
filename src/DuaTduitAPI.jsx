@@ -77,7 +77,7 @@ const DuaTduit = ({ user, onLogout }) => { // ✅ Terima props
     }
   };
 
-  // ✅ Fungsi submit ke API dengan token
+  // ✅ Fungsi submit ke API dengan token (HANYA 1x!)
   const handleSubmit = async () => {
     if (!formData.amount || !formData.category || !formData.source) {
       alert('Mohon lengkapi semua field yang wajib diisi');
@@ -123,64 +123,6 @@ const DuaTduit = ({ user, onLogout }) => { // ✅ Terima props
       setLoading(false);
     }
   };
-
-  const handleSubmit = async () => {
-    if (!formData.amount || !formData.category || !formData.source) {
-      alert('Mohon lengkapi semua field yang wajib diisi');
-      return;
-    }
-    
-    const newTransaction = {
-      type: modalType,
-      amount: formData.amount,
-      category: formData.category,
-      source: formData.source,
-      description: formData.description,
-      date: formData.date
-    };
-
-    setLoading(true);
-    try {
-      const result = await fetchWithAuth(API_URL, {
-        method: 'POST',
-        body: JSON.stringify(newTransaction)
-      });
-
-      if (result && result.success) {
-        alert('Transaksi berhasil disimpan!');
-        await fetchTransactions();
-        
-        setShowModal(false);
-        setModalType('');
-        setFormData({
-          amount: '',
-          category: '',
-          source: '',
-          description: '',
-          date: new Date().toISOString().split('T')[0]
-        });
-      } else {
-        alert('Gagal menyimpan transaksi: ' + (result?.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error saving transaction:', error);
-      alert('Terjadi kesalahan saat menyimpan data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    setUser(null);
-    setTransactions([]);
-  };
-
-  // ✅ Tampilkan login jika belum login
-  if (!user) {
-    return <Login onLoginSuccess={setUser} />;
-  }
 
   const incomeCategories = [
     { value: 'dana_darurat', label: 'Dana Darurat', icon: Umbrella },
