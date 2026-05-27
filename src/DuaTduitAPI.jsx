@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from "firebase/firestore";
-import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun, LogOut } from 'lucide-react';
+import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, ArrowRightLeft, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun, LogOut } from 'lucide-react';
 import { db } from "./firebase";
 
 const DuaTduit = ({ user, onLogout }) => {
@@ -19,6 +19,16 @@ const DuaTduit = ({ user, onLogout }) => {
     description: '',
     date: new Date().toISOString().split('T')[0]
   });
+
+  const resetForm = () => {
+    setFormData({
+      amount: '',
+      category: '',
+      source: '',
+      description: '',
+      date: new Date().toISOString().split('T')[0]
+    });
+  };
 
   useEffect(() => {
     if (!user?.uid) {
@@ -61,6 +71,11 @@ const DuaTduit = ({ user, onLogout }) => {
       alert('Mohon lengkapi semua field yang wajib diisi');
       return;
     }
+
+    if (modalType === 'transfer' && formData.category === formData.source) {
+      alert('Pilih dana asal dan tujuan yang berbeda');
+      return;
+    }
     
     const newTransaction = {
       type: modalType,
@@ -79,13 +94,7 @@ const DuaTduit = ({ user, onLogout }) => {
       alert('Transaksi berhasil disimpan!');
       setShowModal(false);
       setModalType('');
-      setFormData({
-        amount: '',
-        category: '',
-        source: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0]
-      });
+      resetForm();
     } catch (error) {
       console.error('Error saving transaction:', error);
       alert('Terjadi kesalahan saat menyimpan data ke Firebase');
@@ -109,6 +118,8 @@ const DuaTduit = ({ user, onLogout }) => {
     'Makan & Minum', 'Transportasi', 'Hiburan', 'Belanja', 'Tagihan', 'Kesehatan', 'Pendidikan', 'Lainnya'
   ];
 
+  const getFundLabel = (value) => incomeCategories.find(cat => cat.value === value)?.label || value;
+
   const calculateTotals = () => {
     const totals = {
       dana_darurat: 0,
@@ -125,6 +136,13 @@ const DuaTduit = ({ user, onLogout }) => {
           totals[t.category] += amount;
         }
         totals.total += amount;
+      } else if (t.type === 'transfer') {
+        if (Object.prototype.hasOwnProperty.call(totals, t.category)) {
+          totals[t.category] -= amount;
+        }
+        if (Object.prototype.hasOwnProperty.call(totals, t.source)) {
+          totals[t.source] += amount;
+        }
       } else {
         if (Object.prototype.hasOwnProperty.call(totals, t.category)) {
           totals[t.category] -= amount;
@@ -268,7 +286,7 @@ const DuaTduit = ({ user, onLogout }) => {
 
         {showFilter && (
             <div className="flex gap-2 mb-6 flex-wrap">
-            {['all', 'income', 'expense'].map((type) => (
+            {['all', 'income', 'expense', 'transfer'].map((type) => (
                 <button
                 key={type}
                 onClick={() => setFilterType(type)}
@@ -280,7 +298,7 @@ const DuaTduit = ({ user, onLogout }) => {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
                 >
-                {type === 'all' ? 'Semua' : type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+                {type === 'all' ? 'Semua' : type === 'income' ? 'Pemasukan' : type === 'expense' ? 'Pengeluaran' : 'Transfer'}
                 </button>
             ))}
             </div>
@@ -295,6 +313,7 @@ const DuaTduit = ({ user, onLogout }) => {
             ) : (
             filteredTransactions.map((t) => {
                 const isIncome = t.type === 'income';
+                const isTransfer = t.type === 'transfer';
                 const categoryData = isIncome
                 ? incomeCategories.find(c => c.value === t.category)
                 : null;
@@ -306,9 +325,11 @@ const DuaTduit = ({ user, onLogout }) => {
                 >
                     <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3 flex-1">
-                        <div className={`p-2 rounded-lg ${isIncome ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <div className={`p-2 rounded-lg ${isIncome ? 'bg-green-100' : isTransfer ? 'bg-blue-100' : 'bg-red-100'}`}>
                         {isIncome ? (
                             <ArrowUpCircle className="w-5 h-5 text-green-600" />
+                        ) : isTransfer ? (
+                            <ArrowRightLeft className="w-5 h-5 text-blue-600" />
                         ) : (
                             <ArrowDownCircle className="w-5 h-5 text-red-600" />
                         )}
@@ -316,15 +337,17 @@ const DuaTduit = ({ user, onLogout }) => {
                         <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                             <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                            {isIncome
+                            {isTransfer
+                                ? `${getFundLabel(t.category)} ke ${getFundLabel(t.source)}`
+                                : isIncome
                                 ? categoryData?.label || t.category
                                 : t.source}
                             </h3>
-                            <span className={`text-xs px-2 py-1 rounded-full ${isIncome ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {isIncome ? 'Pemasukan' : 'Pengeluaran'}
+                            <span className={`text-xs px-2 py-1 rounded-full ${isIncome ? 'bg-green-100 text-green-700' : isTransfer ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                            {isIncome ? 'Pemasukan' : isTransfer ? 'Transfer' : 'Pengeluaran'}
                             </span>
                         </div>
-                        {t.source && (
+                        {t.source && !isTransfer && (
                             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} flex items-center gap-1`}>
                             <Tag className="w-3 h-3" />
                             {t.source}
@@ -347,8 +370,8 @@ const DuaTduit = ({ user, onLogout }) => {
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className={`text-xl font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
-                        {isIncome ? '+' : '-'}{formatCurrency(t.amount)}
+                        <p className={`text-xl font-bold ${isIncome ? 'text-green-600' : isTransfer ? 'text-blue-600' : 'text-red-600'}`}>
+                        {isIncome ? '+' : isTransfer ? '' : '-'}{formatCurrency(t.amount)}
                         </p>
                     </div>
                     </div>
@@ -396,6 +419,13 @@ const DuaTduit = ({ user, onLogout }) => {
                 <ArrowDownCircle className="w-6 h-6" />
                 Tambah Pengeluaran
             </button>
+            <button
+                onClick={() => setModalType('transfer')}
+                className="w-full bg-gradient-to-r from-blue-400 to-blue-500 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-3"
+            >
+                <ArrowRightLeft className="w-6 h-6" />
+                Pindah Dana
+            </button>
             </div>
         </div>
         </div>
@@ -406,19 +436,13 @@ const DuaTduit = ({ user, onLogout }) => {
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-3xl p-8 max-w-md w-full shadow-2xl transform transition-all my-8`}>
             <div className="flex justify-between items-center mb-6">
             <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                {modalType === 'income' ? 'Tambah Pemasukan' : 'Tambah Pengeluaran'}
+                {modalType === 'income' ? 'Tambah Pemasukan' : modalType === 'expense' ? 'Tambah Pengeluaran' : 'Pindah Dana'}
             </h2>
             <button
                 onClick={() => {
                 setShowModal(false);
                 setModalType('');
-                setFormData({
-                    amount: '',
-                    category: '',
-                    source: '',
-                    description: '',
-                    date: new Date().toISOString().split('T')[0]
-                });
+                resetForm();
                 }}
                 className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'} transition-colors`}
             >
@@ -442,7 +466,7 @@ const DuaTduit = ({ user, onLogout }) => {
 
             <div>
                 <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {modalType === 'income' ? 'Masuk ke mana? *' : 'Dari dana apa? *'}
+                {modalType === 'income' ? 'Masuk ke mana? *' : modalType === 'expense' ? 'Dari dana apa? *' : 'Dari dana apa? *'}
                 </label>
                 <select
                 value={formData.category}
@@ -458,7 +482,7 @@ const DuaTduit = ({ user, onLogout }) => {
 
             <div>
                 <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {modalType === 'income' ? 'Sumber uang *' : 'Untuk apa? *'}
+                {modalType === 'income' ? 'Sumber uang *' : modalType === 'expense' ? 'Untuk apa? *' : 'Pindah ke mana? *'}
                 </label>
                 {modalType === 'income' ? (
                 <select
@@ -471,7 +495,7 @@ const DuaTduit = ({ user, onLogout }) => {
                     <option key={source} value={source}>{source}</option>
                     ))}
                 </select>
-                ) : (
+                ) : modalType === 'expense' ? (
                 <select
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
@@ -480,6 +504,19 @@ const DuaTduit = ({ user, onLogout }) => {
                     <option value="">Pilih kategori</option>
                     {expenseCategories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                </select>
+                ) : (
+                <select
+                    value={formData.source}
+                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all`}
+                >
+                    <option value="">Pilih tujuan</option>
+                    {incomeCategories
+                    .filter(cat => cat.value !== formData.category)
+                    .map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
                     ))}
                 </select>
                 )}
@@ -515,10 +552,12 @@ const DuaTduit = ({ user, onLogout }) => {
                 className={`w-full py-4 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all ${
                 modalType === 'income'
                     ? 'bg-gradient-to-r from-blue-400 to-green-400'
-                    : 'bg-gradient-to-r from-green-400 to-green-500'
+                    : modalType === 'expense'
+                    ? 'bg-gradient-to-r from-green-400 to-green-500'
+                    : 'bg-gradient-to-r from-blue-400 to-blue-500'
                 }`}
             >
-                Simpan Transaksi
+                {modalType === 'transfer' ? 'Simpan Transfer' : 'Simpan Transaksi'}
             </button>
             </div>
         </div>
