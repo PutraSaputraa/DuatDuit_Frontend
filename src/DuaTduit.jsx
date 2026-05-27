@@ -8,6 +8,7 @@ const DuaTduit = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterType, setFilterType] = useState('all');
+  const [activePage, setActivePage] = useState('dashboard');
 
   const [formData, setFormData] = useState({
     amount: '',
@@ -91,6 +92,48 @@ const DuaTduit = () => {
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
+  const monthlyChartData = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - (5 - index));
+
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    const label = date.toLocaleDateString('id-ID', { month: 'short' });
+
+    const income = transactions
+      .filter((t) => {
+        const transactionDate = new Date(t.date);
+        return t.type === 'income' && transactionDate.getMonth() === month && transactionDate.getFullYear() === year;
+      })
+      .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+    const expense = transactions
+      .filter((t) => {
+        const transactionDate = new Date(t.date);
+        return t.type === 'expense' && transactionDate.getMonth() === month && transactionDate.getFullYear() === year;
+      })
+      .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+    return { label, income, expense };
+  });
+
+  const maxMonthlyAmount = Math.max(...monthlyChartData.flatMap(item => [item.income, item.expense]), 1);
+
+  const expenseBreakdown = expenseCategories
+    .map((category) => ({
+      category,
+      amount: transactions
+        .filter(t => t.type === 'expense' && t.source === category)
+        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0)
+    }))
+    .filter(item => item.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
+
+  const maxExpenseCategory = Math.max(...expenseBreakdown.map(item => item.amount), 1);
+
+  const incomePercentage = totalIncome + totalExpense > 0 ? (totalIncome / (totalIncome + totalExpense)) * 100 : 0;
+  const expensePercentage = totalIncome + totalExpense > 0 ? (totalExpense / (totalIncome + totalExpense)) * 100 : 0;
+
   const handleSubmit = () => {
     if (!formData.amount || !formData.category || !formData.source) {
       alert('Mohon lengkapi semua field yang wajib diisi');
@@ -142,17 +185,76 @@ const DuaTduit = () => {
               </div>
               <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>DuaTduit</h1>
             </div>
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}
-            >
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActivePage('dashboard')}
+                className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activePage === 'dashboard'
+                    ? 'bg-gradient-to-r from-blue-400 to-green-400 text-white shadow-md'
+                    : darkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Wallet className="w-4 h-4" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => setActivePage('charts')}
+                className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activePage === 'charts'
+                    ? 'bg-gradient-to-r from-blue-400 to-green-400 text-white shadow-md'
+                    : darkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                Chart
+              </button>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className={`sm:hidden grid grid-cols-2 gap-2 mb-6 ${darkMode ? 'bg-gray-800' : 'bg-white'} p-2 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-100'} shadow-sm`}>
+          <button
+            onClick={() => setActivePage('dashboard')}
+            className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activePage === 'dashboard'
+                ? 'bg-gradient-to-r from-blue-400 to-green-400 text-white shadow-md'
+                : darkMode
+                ? 'text-gray-300'
+                : 'text-gray-700'
+            }`}
+          >
+            <Wallet className="w-4 h-4" />
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActivePage('charts')}
+            className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activePage === 'charts'
+                ? 'bg-gradient-to-r from-blue-400 to-green-400 text-white shadow-md'
+                : darkMode
+                ? 'text-gray-300'
+                : 'text-gray-700'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            Chart
+          </button>
+        </div>
+
+        {activePage === 'dashboard' ? (
+        <>
         <div className={`${darkMode ? 'bg-gradient-to-r from-blue-900 to-green-900' : 'bg-gradient-to-r from-blue-400 to-green-400'} rounded-3xl p-8 mb-8 shadow-lg transform hover:scale-[1.02] transition-all duration-300`}>
           <div className="flex items-center justify-center mb-3">
             <Wallet className="w-8 h-8 text-white mr-3" />
@@ -314,6 +416,110 @@ const DuaTduit = () => {
             )}
           </div>
         </div>
+        </>
+        ) : (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Chart Keuangan</h2>
+              <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Pemasukan dan pengeluaran 6 bulan terakhir</p>
+            </div>
+            <button
+              onClick={() => setActivePage('dashboard')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${darkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100'} border ${darkMode ? 'border-gray-700' : 'border-gray-100'} shadow-sm`}
+            >
+              <Wallet className="w-4 h-4" />
+              Dashboard
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-md border`}>
+              <div className="flex items-center justify-between mb-4">
+                <p className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Pemasukan</p>
+                <ArrowUpCircle className="w-6 h-6 text-green-500" />
+              </div>
+              <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(totalIncome)}</p>
+              <p className="text-sm text-green-600 mt-2">{incomePercentage.toFixed(1)}% dari arus uang</p>
+            </div>
+            <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-md border`}>
+              <div className="flex items-center justify-between mb-4">
+                <p className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Pengeluaran</p>
+                <ArrowDownCircle className="w-6 h-6 text-red-500" />
+              </div>
+              <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(totalExpense)}</p>
+              <p className="text-sm text-red-600 mt-2">{expensePercentage.toFixed(1)}% dari arus uang</p>
+            </div>
+            <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-md border`}>
+              <div className="flex items-center justify-between mb-4">
+                <p className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Selisih Bersih</p>
+                <TrendingUp className="w-6 h-6 text-blue-500" />
+              </div>
+              <p className={`text-3xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totalIncome - totalExpense)}</p>
+              <div className="flex h-3 rounded-full overflow-hidden mt-4 bg-gray-200">
+                <div className="bg-green-500" style={{ width: `${incomePercentage}%` }} />
+                <div className="bg-red-500" style={{ width: `${expensePercentage}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-lg border`}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Tren Bulanan</h3>
+              <div className="flex items-center gap-4 text-sm">
+                <span className="flex items-center gap-2 text-green-600"><span className="w-3 h-3 rounded-full bg-green-500" /> Pemasukan</span>
+                <span className="flex items-center gap-2 text-red-600"><span className="w-3 h-3 rounded-full bg-red-500" /> Pengeluaran</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-6 gap-3 sm:gap-6 h-72">
+              {monthlyChartData.map((item) => (
+                <div key={item.label} className="flex flex-col justify-end min-w-0">
+                  <div className="flex items-end justify-center gap-2 h-52">
+                    <div
+                      className="w-5 sm:w-8 rounded-t-lg bg-green-500 transition-all"
+                      title={`Pemasukan ${item.label}: ${formatCurrency(item.income)}`}
+                      style={{ height: `${Math.max((item.income / maxMonthlyAmount) * 100, item.income > 0 ? 4 : 0)}%` }}
+                    />
+                    <div
+                      className="w-5 sm:w-8 rounded-t-lg bg-red-500 transition-all"
+                      title={`Pengeluaran ${item.label}: ${formatCurrency(item.expense)}`}
+                      style={{ height: `${Math.max((item.expense / maxMonthlyAmount) * 100, item.expense > 0 ? 4 : 0)}%` }}
+                    />
+                  </div>
+                  <p className={`text-center text-xs sm:text-sm mt-3 truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-lg border`}>
+            <h3 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Kategori Pengeluaran</h3>
+            {expenseBreakdown.length === 0 ? (
+              <div className="text-center py-12">
+                <BarChart3 className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-300'}`} />
+                <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Belum ada data pengeluaran</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {expenseBreakdown.map((item) => (
+                  <div key={item.category}>
+                    <div className="flex items-center justify-between gap-4 mb-2">
+                      <p className={`font-medium truncate ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{item.category}</p>
+                      <p className={`font-semibold whitespace-nowrap ${darkMode ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(item.amount)}</p>
+                    </div>
+                    <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-red-400 to-orange-400"
+                        style={{ width: `${(item.amount / maxExpenseCategory) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        )}
       </div>
 
       <div className="fixed bottom-8 right-8 z-50">
