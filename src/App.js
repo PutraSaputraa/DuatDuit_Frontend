@@ -27,13 +27,17 @@ function App() {
       await signOut(auth);
     } catch (error) {
       console.error('Logout failed:', error);
+      setUser(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-400 to-green-400 flex items-center justify-center">
+        <div className="text-white text-2xl font-semibold flex items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          Loading...
+        </div>
       </div>
     );
   }
