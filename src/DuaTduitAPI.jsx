@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun } from 'lucide-react';
+import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from "firebase/firestore";
+import { Wallet, PiggyBank, Umbrella, Coffee, TrendingUp, Plus, X, ArrowUpCircle, ArrowDownCircle, Calendar, Tag, FileText, BarChart3, Filter, Moon, Sun, LogOut } from 'lucide-react';
+import { db } from "./firebase";
 
-const API_URL = 'http://localhost/duatduit-api/api.php';
-
-const DuaTduit = () => {
+const DuaTduit = ({ user, onLogout }) => {
   const [transactions, setTransactions] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
@@ -20,35 +20,43 @@ const DuaTduit = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
-  // Load data dari API saat pertama kali
   useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  // Fungsi untuk fetch data dari API
-  const fetchTransactions = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(API_URL, {
-        credentials: 'include' // PENTING: Untuk mengirim session cookie
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        setTransactions(result.data);
-      } else {
-        console.error('Failed to fetch transactions');
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      alert('Gagal memuat data. Pastikan XAMPP sudah berjalan!');
-    } finally {
-      setLoading(false);
+    if (!user?.uid) {
+      setTransactions([]);
+      return undefined;
     }
-  };
 
-  // Fungsi submit ke API
+    setLoading(true);
+    const transactionsRef = collection(db, "users", user.uid, "transactions");
+    const transactionsQuery = query(transactionsRef, orderBy("createdAt", "desc"));
+
+    const unsubscribe = onSnapshot(
+      transactionsQuery,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        setTransactions(data);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching transactions:', error);
+        alert('Gagal memuat data dari Firebase. Periksa Firestore Rules.');
+        setLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  }, [user]);
+
   const handleSubmit = async () => {
+    if (!user?.uid) {
+      alert('Silakan login terlebih dahulu');
+      return;
+    }
+
     if (!formData.amount || !formData.category || !formData.source) {
       alert('Mohon lengkapi semua field yang wajib diisi');
       return;
@@ -56,45 +64,31 @@ const DuaTduit = () => {
     
     const newTransaction = {
       type: modalType,
-      amount: formData.amount,
+      amount: Number(formData.amount),
       category: formData.category,
       source: formData.source,
       description: formData.description,
-      date: formData.date
+      date: formData.date,
+      createdAt: serverTimestamp()
     };
 
     setLoading(true);
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // PENTING: Untuk mengirim session cookie
-        body: JSON.stringify(newTransaction)
+      await addDoc(collection(db, "users", user.uid, "transactions"), newTransaction);
+
+      alert('Transaksi berhasil disimpan!');
+      setShowModal(false);
+      setModalType('');
+      setFormData({
+        amount: '',
+        category: '',
+        source: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
       });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert('Transaksi berhasil disimpan!');
-        await fetchTransactions();
-        
-        setShowModal(false);
-        setModalType('');
-        setFormData({
-          amount: '',
-          category: '',
-          source: '',
-          description: '',
-          date: new Date().toISOString().split('T')[0]
-        });
-      } else {
-        alert('Gagal menyimpan transaksi: ' + (result.error || 'Unknown error'));
-      }
     } catch (error) {
       console.error('Error saving transaction:', error);
-      alert('Terjadi kesalahan saat menyimpan data');
+      alert('Terjadi kesalahan saat menyimpan data ke Firebase');
     } finally {
       setLoading(false);
     }
@@ -125,12 +119,16 @@ const DuaTduit = () => {
     };
 
     transactions.forEach(t => {
-      const amount = parseFloat(t.amount);
+      const amount = Number(t.amount) || 0;
       if (t.type === 'income') {
-        totals[t.category] += amount;
+        if (Object.prototype.hasOwnProperty.call(totals, t.category)) {
+          totals[t.category] += amount;
+        }
         totals.total += amount;
       } else {
-        totals[t.category] -= amount;
+        if (Object.prototype.hasOwnProperty.call(totals, t.category)) {
+          totals[t.category] -= amount;
+        }
         totals.total -= amount;
       }
     });
@@ -142,11 +140,11 @@ const DuaTduit = () => {
 
   const totalIncome = transactions
     .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
   const totalExpense = transactions
     .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
@@ -180,12 +178,25 @@ const DuaTduit = () => {
               </div>
               <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>DuatDuit</h1>
             </div>
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}
-            >
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            <div className="flex items-center gap-2">
+              <span className={`hidden sm:block text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {user?.displayName || user?.email}
+              </span>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}
+                title="Ganti tema"
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={onLogout}
+                className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-600'} hover:scale-110 transition-transform`}
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </nav>

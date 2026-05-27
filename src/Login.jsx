@@ -1,48 +1,60 @@
 import React, { useState } from 'react';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { LogIn, UserPlus } from 'lucide-react';
+import { auth } from "./firebase";
 
 const Login = ({ onLoginSuccess }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
-    full_name: ''
+    fullName: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const getErrorMessage = (code) => {
+    const messages = {
+      "auth/email-already-in-use": "Email sudah terdaftar",
+      "auth/invalid-email": "Format email tidak valid",
+      "auth/invalid-credential": "Email atau password salah",
+      "auth/weak-password": "Password minimal 6 karakter"
+    };
+
+    return messages[code] || "Terjadi kesalahan";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const url = isRegister 
-      ? 'http://localhost/duatduit-api/auth.php?action=register'
-      : 'http://localhost/duatduit-api/auth.php?action=login';
-
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Penting untuk session
-        body: JSON.stringify(formData)
-      });
+      if (isRegister) {
+        const credential = await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
 
-      const result = await response.json();
-
-      if (result.success) {
-        if (isRegister) {
-          alert('Registrasi berhasil! Silakan login.');
-          setIsRegister(false);
-        } else {
-          onLoginSuccess(result.user);
+        if (formData.fullName) {
+          await updateProfile(credential.user, {
+            displayName: formData.fullName
+          });
         }
+
+        onLoginSuccess(credential.user);
       } else {
-        setError(result.error || 'Terjadi kesalahan');
+        const credential = await signInWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+
+        onLoginSuccess(credential.user);
       }
     } catch (err) {
-      setError('Gagal terhubung ke server');
+      setError(getErrorMessage(err.code));
     } finally {
       setLoading(false);
     }
@@ -67,46 +79,31 @@ const Login = ({ onLoginSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Username {isRegister && 'atau Email'}
+              Email
             </label>
             <input
-              type="text"
+              type="email"
               required
-              value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              placeholder="username"
+              placeholder="email@example.com"
             />
           </div>
 
           {isRegister && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  placeholder="email@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nama Lengkap (Opsional)
-                </label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  placeholder="Nama lengkap"
-                />
-              </div>
-            </>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nama Lengkap (Opsional)
+              </label>
+              <input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                placeholder="Nama lengkap"
+              />
+            </div>
           )}
 
           <div>
@@ -117,9 +114,9 @@ const Login = ({ onLoginSuccess }) => {
               type="password"
               required
               value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              placeholder="••••••••"
+              placeholder="Minimal 6 karakter"
             />
           </div>
 
@@ -139,7 +136,10 @@ const Login = ({ onLoginSuccess }) => {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => setIsRegister(!isRegister)}
+            onClick={() => {
+              setIsRegister(!isRegister);
+              setError('');
+            }}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
             {isRegister ? 'Sudah punya akun? Login' : 'Belum punya akun? Daftar'}
