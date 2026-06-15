@@ -22,9 +22,21 @@ function App() {
     setUser(userData);
   };
 
+  const handleDemoLogin = () => {
+    setUser({
+      uid: 'demo-portfolio',
+      email: 'demo@duatduit.app',
+      displayName: 'Anugraha',
+      isDemo: true
+    });
+  };
+
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      if (!user?.isDemo) {
+        await signOut(auth);
+      }
+      setUser(null);
     } catch (error) {
       console.error('Logout failed:', error);
       setUser(null);
@@ -33,9 +45,9 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-400 to-green-400 flex items-center justify-center">
-        <div className="text-white text-2xl font-semibold flex items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      <div className="min-h-screen bg-[#e8ebe6] flex items-center justify-center">
+        <div className="text-[#0e0f0c] text-2xl font-bold flex items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9fe870]"></div>
           Loading...
         </div>
       </div>
@@ -47,7 +59,7 @@ function App() {
       {user ? (
         <DuaTduit user={user} onLogout={handleLogout} />
       ) : (
-        <Login onLoginSuccess={handleLoginSuccess} />
+        <Login onLoginSuccess={handleLoginSuccess} onDemoLogin={handleDemoLogin} />
       )}
     </BrowserRouter>
   );

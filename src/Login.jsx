@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus, Sparkles } from 'lucide-react';
 import { auth } from "./firebase";
 
-const Login = ({ onLoginSuccess }) => {
+const Login = ({ onLoginSuccess, onDemoLogin }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -61,24 +61,27 @@ const Login = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 to-green-400 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
+    <div className="min-h-screen bg-[#e8ebe6] flex items-center justify-center p-4">
+      <div className="bg-white rounded-[24px] wise-card p-8 max-w-md w-full">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#9fe870]">
+          <LogIn className="h-7 w-7 text-[#0e0f0c]" />
+        </div>
+        <h1 className="text-3xl font-black text-center mb-2 text-[#0e0f0c]">
           {isRegister ? 'Daftar Akun' : 'Login'}
         </h1>
-        <p className="text-center text-gray-600 mb-6">
+        <p className="text-center text-[#454745] mb-6">
           {isRegister ? 'Buat akun baru' : 'Masuk ke akun Anda'}
         </p>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4">
+          <div className="bg-red-50 border border-[#d03238]/30 text-[#a72027] px-4 py-3 rounded-xl mb-4">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-[#454745] mb-2">
               Email
             </label>
             <input
@@ -86,28 +89,28 @@ const Login = ({ onLoginSuccess }) => {
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-[#0e0f0c]/25 text-[#0e0f0c] focus:ring-2 focus:ring-[#9fe870] focus:border-[#0e0f0c]"
               placeholder="email@example.com"
             />
           </div>
 
           {isRegister && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-[#454745] mb-2">
                 Nama Lengkap (Opsional)
               </label>
               <input
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-[#0e0f0c]/25 text-[#0e0f0c] focus:ring-2 focus:ring-[#9fe870] focus:border-[#0e0f0c]"
                 placeholder="Nama lengkap"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-[#454745] mb-2">
               Password
             </label>
             <input
@@ -115,7 +118,7 @@ const Login = ({ onLoginSuccess }) => {
               required
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-[#0e0f0c]/25 text-[#0e0f0c] focus:ring-2 focus:ring-[#9fe870] focus:border-[#0e0f0c]"
               placeholder="Minimal 6 karakter"
             />
           </div>
@@ -123,7 +126,7 @@ const Login = ({ onLoginSuccess }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-[#9fe870] text-[#0e0f0c] py-4 rounded-[24px] font-bold hover:bg-[#cdffad] hover:scale-[1.01] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? 'Loading...' : (
               <>
@@ -134,13 +137,32 @@ const Login = ({ onLoginSuccess }) => {
           </button>
         </form>
 
+        <div className="mt-4">
+          <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-gray-200" />
+            <span className="mx-3 text-xs font-medium text-gray-400">atau</span>
+            <div className="flex-grow border-t border-gray-200" />
+          </div>
+          <button
+            type="button"
+            onClick={onDemoLogin}
+            className="w-full bg-[#0e0f0c] text-[#9fe870] py-4 rounded-[24px] font-bold hover:bg-[#24261f] hover:scale-[1.01] transition-all flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-5 h-5" />
+            Masuk Akun Demo
+          </button>
+          <p className="text-center text-xs text-[#454745] mt-3">
+            Data contoh sudah terisi untuk tampilan portofolio.
+          </p>
+        </div>
+
         <div className="mt-6 text-center">
           <button
             onClick={() => {
               setIsRegister(!isRegister);
               setError('');
             }}
-            className="text-blue-600 hover:text-blue-800 font-medium"
+            className="text-[#054d28] hover:text-[#0e0f0c] font-semibold"
           >
             {isRegister ? 'Sudah punya akun? Login' : 'Belum punya akun? Daftar'}
           </button>
